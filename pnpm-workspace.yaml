@@ -1,0 +1,2 @@
+packages:
+  - 'lesson-*' # 匹配 lessons 文件夹下的所有子文件夹
