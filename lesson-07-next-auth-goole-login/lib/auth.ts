@@ -1,6 +1,9 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
+import prisma from "./prisma";
+import { PrismaAdapter } from "@auth/prisma-adapter";
+import { compare } from "bcrypt";
 
 // 扩展 NextAuth 的类型定义
 declare module "next-auth" {
@@ -18,6 +21,7 @@ declare module "next-auth" {
 // NextAuth 配置选项
 export const authOptions: NextAuthOptions = {
   // 配置身份验证提供者
+  adapter: PrismaAdapter(prisma),
   providers: [
     // Google OAuth 提供者配置
     GoogleProvider({
@@ -30,19 +34,46 @@ export const authOptions: NextAuthOptions = {
       name: "Credentials", // 提供者名称
       // 定义登录表单字段
       credentials: {
-        username: { label: "Username", type: "text", placeholder: "username" }, // 用户名输入框
+        username: { label: "Email", type: "text", placeholder: "email@example.com" }, // 邮箱输入框
         password: { label: "Password", type: "password" },                     // 密码输入框
       },
       // 验证用户凭证的函数
       async authorize(credentials) {
-        // 这里通常会检查数据库中的用户凭证
-        // 示例中使用硬编码的用户名和密码进行演示
-        if (credentials?.username === "admin" && credentials?.password === "password") {
-          // 验证成功，返回用户对象
-          return { id: "1", name: "Admin", email: "admin@example.com" };
+        if (!credentials?.username || !credentials?.password) {
+          return null;
         }
-        // 验证失败，返回null
-        return null;
+
+        try {
+          // 查找用户
+          const user = await prisma.user.findUnique({
+            where: {
+              email: credentials.username,
+            },
+          });
+
+          // 如果用户不存在或没有密码（可能是通过OAuth注册的）
+          if (!user || !user.password) {
+            return null;
+          }
+
+          // 验证密码
+          const isPasswordValid = await compare(credentials.password, user.password);
+
+          if (!isPasswordValid) {
+            return null;
+          }
+
+          // 验证成功，返回用户信息（不包含密码）
+          return {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            image: user.image,
+          };
+        } catch (error) {
+          console.error("认证错误:", error);
+          return null;
+        }
       },
     }),
   ],
@@ -50,6 +81,7 @@ export const authOptions: NextAuthOptions = {
   // 自定义页面路径
   pages: {
     signIn: "/login", // 自定义登录页面路径
+    newUser: "/register", // 自定义注册页面路径
   },
   
   // 回调函数配置

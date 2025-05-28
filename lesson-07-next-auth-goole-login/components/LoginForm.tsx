@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 
 interface LoginFormProps {
   providers: Record<string, any> | null;
@@ -11,15 +12,26 @@ interface LoginFormProps {
 
 export default function LoginForm({ providers }: LoginFormProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  // 检查是否从注册页面跳转过来
+  useEffect(() => {
+    const registered = searchParams.get("registered");
+    if (registered === "true") {
+      setSuccessMessage("注册成功！请使用您的邮箱和密码登录。");
+    }
+  }, [searchParams]);
 
   const handleCredentialsLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
+    setSuccessMessage("");
 
     try {
       const result = await signIn("credentials", {
@@ -29,13 +41,13 @@ export default function LoginForm({ providers }: LoginFormProps) {
       });
 
       if (result?.error) {
-        setError("Invalid credentials");
+        setError("用户名或密码不正确");
       } else {
         router.push("/");
         router.refresh();
       }
     } catch (error) {
-      setError("An error occurred. Please try again.");
+      setError("登录失败，请稍后再试。");
     } finally {
       setIsLoading(false);
     }
@@ -43,10 +55,16 @@ export default function LoginForm({ providers }: LoginFormProps) {
 
   return (
     <div className="space-y-6">
+      {successMessage && (
+        <div className="bg-green-50 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
+          <span className="block sm:inline">{successMessage}</span>
+        </div>
+      )}
+
       <form onSubmit={handleCredentialsLogin} className="space-y-4">
         <div>
           <label htmlFor="username" className="block text-sm font-medium">
-            Username
+            邮箱
           </label>
           <input
             id="username"
@@ -61,7 +79,7 @@ export default function LoginForm({ providers }: LoginFormProps) {
 
         <div>
           <label htmlFor="password" className="block text-sm font-medium">
-            Password
+            密码
           </label>
           <input
             id="password"
@@ -83,16 +101,23 @@ export default function LoginForm({ providers }: LoginFormProps) {
           className="w-full"
           disabled={isLoading}
         >
-          {isLoading ? "Signing in..." : "Sign in"}
+          {isLoading ? "登录中..." : "登录"}
         </Button>
       </form>
+
+      <div className="text-center text-sm">
+        没有账号？{" "}
+        <Link href="/register" className="text-indigo-600 hover:text-indigo-500">
+          注册
+        </Link>
+      </div>
 
       <div className="relative">
         <div className="absolute inset-0 flex items-center">
           <div className="w-full border-t border-gray-300" />
         </div>
         <div className="relative flex justify-center text-sm">
-          <span className="bg-white px-2 text-gray-500">Or continue with</span>
+          <span className="bg-white px-2 text-gray-500">或使用以下方式登录</span>
         </div>
       </div>
 
@@ -108,7 +133,7 @@ export default function LoginForm({ providers }: LoginFormProps) {
                 className="w-full"
                 variant="outline"
               >
-                Sign in with {provider.name}
+                使用 {provider.name} 登录
               </Button>
             );
           })}

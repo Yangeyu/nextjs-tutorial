@@ -17,7 +17,7 @@ export default function Navbar() {
           <div className="flex">
             <div className="flex-shrink-0 flex items-center">
               <Link href="/" className="text-xl font-bold">
-                NextAuth Demo
+                NextAuth 示例
               </Link>
             </div>
             <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
@@ -29,7 +29,7 @@ export default function Navbar() {
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                 }`}
               >
-                Home
+                首页
               </Link>
               {session && (
                 <Link
@@ -40,12 +40,12 @@ export default function Navbar() {
                       : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                   }`}
                 >
-                  Dashboard
+                  个人中心
                 </Link>
               )}
             </div>
           </div>
-          <div className="flex items-center">
+          <div className="flex items-center gap-2">
             {!loading && (
               <>
                 {session ? (
@@ -58,13 +58,18 @@ export default function Navbar() {
                       size="sm"
                       onClick={() => signOut({ callbackUrl: "/" })}
                     >
-                      Sign Out
+                      退出登录
                     </Button>
                   </div>
                 ) : (
-                  <Button asChild size="sm">
-                    <Link href="/login">Sign In</Link>
-                  </Button>
+                  <>
+                    <Button asChild size="sm" variant="outline">
+                      <Link href="/register">注册</Link>
+                    </Button>
+                    <Button asChild size="sm">
+                      <Link href="/login">登录</Link>
+                    </Button>
+                  </>
                 )}
               </>
             )}
